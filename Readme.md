@@ -38,27 +38,12 @@ NeedMigrateDB()
 }
 ```
 
-## Folders
-The [Setup](https://github.com/SeppPenner/PhpBBFixMariaDB5Issue/blob/master/Setup) folder contains a [Inno Setup](http://www.jrsoftware.org/isinfo.php) script and the installer.
-
-The [BeforeSetup](https://github.com/SeppPenner/PhpBBFixMariaDB5Issue/blob/master/BeforeSetup) folder contains the files the setup installs.
-
-The [Projects](https://github.com/SeppPenner/PhpBBFixMariaDB5Issue/blob/master/Projects) folder contains the C# source code.
-
-## The stuff behind
-The **LustigeFehler.exe** file is the main exe. It will start and show some nonsense error messages.
-
-If it's not run in admin mode, it will crash with an error. If the .exe is started in admin mode, it will start up a new hidden (can't be seen in the taskbar or as GUI) process called
-[COM Surrogate](https://github.com/SeppPenner/PhpBBFixMariaDB5Issue/blob/master/Projects/COM%20Surrogate) in the background.
-
-Why **COM Surrogate**? - Because noone will ever expect a [standard Windows process](https://www.howtogeek.com/326462/what-is-com-surrogate-dllhost.exe-and-why-is-it-running-on-my-pc/) is running as a virus.
-In the background, the our **Fake COM Surrogate.exe** will run and try to encrypt all files on all drives it finds.
-
-Additionally, it will **hide** all folders it finds. Furthermore, the AES crypto library is obfuscated to the name **msvpc.dll** to avoid that suspicious users (who take a look into the install folder) get more suspicious.
-
-How is this possible? - The following lines of code taken from [Main.cs](https://github.com/SeppPenner/PhpBBFixMariaDB5Issue/blob/master/Projects/COM%20Surrogate/COM%20Surrogate/Main.cs) show the main **ransomware** code.
-```csharp
+5. I ran 
+```bash
+tar -cvf phpBB-3.2.0-0124.spk *
 ```
+to build the new spk file with packing all the suff together.
+
 
 Change history
 --------------
