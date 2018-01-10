@@ -43,13 +43,8 @@ MainCreate()
 
 NeedMigrateDB()
 {
-	local version="$1"
-	if [ -z "$version" ] || [ "$version" -le "$MIGRATE_DB_VERSION" ]; then
-		return 0
-	fi
-	return 1
+	return 0
 }
-
 CustomHasRunWebsiteSetup()
 {
 	local path="$1"
