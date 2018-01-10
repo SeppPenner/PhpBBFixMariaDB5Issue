@@ -42,8 +42,9 @@ NeedMigrateDB()
 ```bash
 tar -cvf phpBB-3.2.0-0124.spk *
 ```
-to build the new spk file with packing all the suff together.
+to build the new spk file with packing all the stuff together.
 
+6. It doesn't work...
 
 Change history
 --------------
