@@ -1,0 +1,57 @@
+#!/bin/bash
+
+PKG_NAME=""
+PKG_DIR=""
+WEBSITE_ROOT=""
+CONF_FILE=""
+MIGRATE_VERSION=""
+PAGE_INST="$PAGE_MARIADB5 $PAGE_RESTORE $PAGE_MARIADB10 $PAGE_DB $MAIN_INSTALL"
+PAGE_UPGRADE="$PAGE_MARIADB5 $PAGE_MARIADB10 $PAGE_DB $MAIN_UPGRADE"
+PAGE_UNINST="$PAGE_UNINST $MAIN_UNINST"
+INIT_DB_NAME=""
+INIT_DB_USER=""
+INFO_FILE="/usr/syno/etc/packages/$PKG_NAME/$PKG_DIR.conf"
+
+CustomHasRunWebsiteSetup()
+{
+	local path="$1"
+	if [ -s "$path/$CONF_FILE" ]; then
+		return 0
+	else
+		return 1
+	fi
+}
+
+CustomSetBackupPath()
+{
+	BACKUP_PATH="$(GetBackupPkgPath)"
+}
+
+CustomParseDBConf()
+{
+	local path="$1"
+	local db_info="$2"
+	local grep_info="$3"
+	local info_output=$(get_key_value "$INFO_FILE" "$db_info")
+
+	if [ -z "$info_output" ] && [ -s "$path/$CONF_FILE" ]; then
+		info_output=$(grep "$grep_info" "$path/$CONF_FILE" | cut -d\' -f2)
+	fi
+
+	echo "$info_output"
+}
+
+CustomGetDBName()
+{
+	CustomParseDBConf "$1" "db_name" "dbdefault"
+}
+
+CustomGetDBUser()
+{
+	CustomParseDBConf "$1" "db_user" "dbuser"
+}
+
+CustomGetDBPass()
+{
+	CustomParseDBConf "$1" "db_pass" "dbpassword"
+}

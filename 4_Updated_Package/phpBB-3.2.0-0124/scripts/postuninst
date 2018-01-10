@@ -1,0 +1,11 @@
+#!/bin/bash
+# Copyright (c) 2000-2017 Synology Inc. All rights reserved.
+
+. "$(dirname "$0")"/common
+
+CustomPostuninst
+
+rm -rf "$WEBSITE_ROOT"
+rm -f "$NGINX_CONF_PATH/$PKG_NGINX_CONFIG"
+
+exit 0

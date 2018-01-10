@@ -1,0 +1,157 @@
+#!/bin/bash
+# Copyright (c) 2000-2017 Synology Inc. All rights reserved.
+
+. "$(dirname "$0")"/string_loader
+. "$(dirname "$0")"/../WIZARD_UIFILES/wizard_common
+. "$(dirname "$0")"/../WIZARD_UIFILES/wizard_customized
+
+SYNOLOGY_ADDED_PATH="$SYNOPKG_PKGDEST/synology_added"
+PKG_NGINX_CONFIG="www.$PKG_NAME.conf"
+NGINX_CONF_PATH="/usr/local/etc/nginx/conf.d/"
+MYSQL="/usr/local/mariadb10/bin/mysql"
+UNIX_SOCKET="/run/mysqld/mysqld10.sock"
+# for WebStation 1.X to 2.0, default PHP setting is not configured
+# so we need to add php56 handler in .htaccess
+# IS_SET_HTACCESS: true for set handler
+IS_SET_HTACCESS="true"
+
+DBAdminCheck()
+{
+	local user="$1"
+	local password="$2"
+	local mysql="$3"
+	local error_msg="$4"
+
+	# Check admin's account and password
+	if ! $mysql -u "$user" --password="$password" -e "exit"; then
+		echo "$wizard_admin_info_error" >> "$SYNOPKG_TEMP_LOGFILE"
+		return 1
+	fi
+
+	# Check whether the account have all privileges *.* or not
+	$mysql -u "$user" --password="$password" -e "SHOW GRANTS FOR ${user}@localhost" | grep -q "GRANT ALL PRIVILEGES ON \*\.\* TO '${user}'@'localhost'.* WITH GRANT OPTION.*"
+	if [ $? -eq 1 ]; then
+		echo "$error_msg" >> "$SYNOPKG_TEMP_LOGFILE"
+		return 1
+	fi
+	return 0
+}
+
+CustomChangeDBUserInfo()
+{
+	:
+}
+
+CustomRemove()
+{
+	:
+}
+
+CustomPreupgrade()
+{
+	:
+}
+
+CustomPreuninst()
+{
+	:
+}
+
+CustomBackupData()
+{
+	:
+}
+
+CustomPostuninst()
+{
+	:
+}
+
+CustomPreinst()
+{
+	:
+}
+
+CustomPostinst()
+{
+	:
+}
+
+CustomSetUpgrade()
+{
+	:
+}
+
+CustomSetWebsiteRoot()
+{
+	:
+}
+
+CustomRestore()
+{
+	:
+}
+
+CustomUseUnixSocket()
+{
+	:
+}
+
+CustomSetCleanNew()
+{
+	:
+}
+
+CustomNewInst()
+{
+	:
+}
+
+CustomSetInit()
+{
+	:
+}
+
+CustomWriteInfo()
+{
+	:
+}
+
+CustomRemoveBackupConf()
+{
+	local backup_info="/var/packages/.$PKG_DIR.conf"
+	[ -s "$backup_info" ] && rm -f "$backup_info"
+}
+
+CustomPostupgrade()
+{
+	:
+}
+
+CustomStart()
+{
+	:
+}
+
+CustomStop()
+{
+	:
+}
+
+QuoteSQLString()
+{
+       sed -e 's|\\|\\\\|g' -e 's|`|\\`|g'
+}
+
+QuoteSed()
+{
+       sed -e 's|\\|\\\\|g' -e 's|&|\\\&|g'
+}
+
+QuotePHP()
+{
+       sed -e "s|\\|\\\\|g" -e "s|'|\\\\'|g"
+}
+
+# must be in the last for overriding
+. "$(dirname "$0")"/script_customized

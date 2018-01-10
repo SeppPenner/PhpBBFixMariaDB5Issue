@@ -1,0 +1,48 @@
+#!/bin/bash
+# Copyright (c) 2000-2017 Synology Inc. All rights reserved.
+
+. "$(dirname "$0")"/common
+
+OLD_BUILD_NUMBER=$(echo "$SYNOPKG_OLD_PKGVER" | cut -d- -f2)
+
+if NeedMigrateDB "$OLD_BUILD_NUMBER"; then
+	MYSQL5="/var/packages/MariaDB/target/usr/bin/mysql"
+	M5_ADMIN_ACC="$wizard_m5_acc"
+	M5_ADMIN_PASS="$wizard_m5_pass"
+
+	M10_ADMIN_ACC="$wizard_m10_acc"
+	M10_ADMIN_PASS="$wizard_m10_pass"
+
+	USER_ACC="$pkgwizard_db_user_account"
+	USER_PASS="$pkgwizard_db_user_password"
+
+	# check m5 admin
+	wizard_admin_info_error="$mariadb5_connect_error"
+	DBAdminCheck "$M5_ADMIN_ACC" "$M5_ADMIN_PASS" "$MYSQL5" "$m5_admin_permission_error" || exit 1
+
+	# check m10 admin
+	wizard_admin_info_error="$mariadb10_connect_error"
+	DBAdminCheck "$M10_ADMIN_ACC" "$M10_ADMIN_PASS" "$MYSQL" "$m10_admin_permission_error" || exit 1
+
+	# check db name
+	$MYSQL -u "$M10_ADMIN_ACC" --password="$M10_ADMIN_PASS" -e "SHOW DATABASES" | grep ^"$pkgwizard_db_name"$
+	if [ $? -eq 0 ]; then
+		echo "$wizard_db_name_exist" >> "$SYNOPKG_TEMP_LOGFILE"
+		exit 1
+	fi
+
+	#check db user
+	USER_EXIST=$($MYSQL -u "$M10_ADMIN_ACC" --password="$M10_ADMIN_PASS" -sse "SELECT EXISTS(SELECT 1 FROM mysql.user WHERE user = '$USER_ACC')")
+	if [ "1" = "$USER_EXIST" ]; then
+		# Check db_user password
+		$MYSQL -u "$USER_ACC" --password="$USER_PASS" -e "exit"
+		if [ $? -eq 1 ]; then
+			sed "s|{0}|$USER_ACC|g" <<< "$wizard_db_user_pass_error" > "$SYNOPKG_TEMP_LOGFILE"
+			exit 1
+		fi
+	fi
+fi
+
+CustomPreupgrade
+
+exit 0

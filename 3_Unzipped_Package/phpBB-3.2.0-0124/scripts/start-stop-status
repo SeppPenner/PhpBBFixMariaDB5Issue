@@ -1,0 +1,71 @@
+#!/bin/bash
+# Copyright (c) 2000-2017 Synology Inc. All rights reserved.
+
+. "$(dirname "$0")"/common
+
+HTACCESS="$WEBSITE_ROOT/.htaccess"
+HTACCESS_BKP="$WEBSITE_ROOT/.htaccess.syno"
+
+ExistSynoInc()
+{
+	grep -q "Synology Inc" "$1"
+}
+
+StartDaemons()
+{
+	CustomStart
+	if [ ! -d "$WEBSITE_ROOT" ]; then
+		echo "web/$PKG_DIR not found." > "$SYNOPKG_TEMP_LOGFILE"
+		exit 150
+	fi
+
+	# grep Syno
+	if [ -e "$HTACCESS_BKP" ]; then
+		if ExistSynoInc "$HTACCESS_BKP"; then
+			rm -f "$HTACCESS_BKP"
+		else
+			mv "$HTACCESS_BKP" "$HTACCESS"
+		fi
+	fi
+	if [ -e "$HTACCESS" ]; then
+		if ExistSynoInc "$HTACCESS"; then
+			rm -f "$HTACCESS"
+		fi
+	fi
+}
+
+StopDaemons()
+{
+	CustomStop
+
+	if [ -e "$HTACCESS" ]; then
+		if ! ExistSynoInc "$HTACCESS"; then
+			mv "$HTACCESS" "$HTACCESS_BKP"
+		fi
+	fi
+	echo -e "#Synology Inc. added\nRewriteEngine On\nRewriteRule ^(.*)$ $WEBSITE_ROOT/disabled.html" > "$HTACCESS"
+}
+
+case "$1" in
+	start)
+		StartDaemons
+		;;
+	stop)
+		StopDaemons
+		;;
+	status)
+		if [ ! -d "$WEBSITE_ROOT" ]; then
+			rm -f "$PKG_DESKTOP"
+			exit 150
+		fi
+		exit 0
+		;;
+	log)
+		echo ""
+		;;
+	*)
+		echo "Usage: $0 {start|stop|status}" >&2
+		exit 1
+		;;
+esac
+exit 0

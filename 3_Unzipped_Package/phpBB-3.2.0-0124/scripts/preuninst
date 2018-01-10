@@ -1,0 +1,28 @@
+#!/bin/bash
+# Copyright (c) 2000-2017 Synology Inc. All rights reserved.
+
+. "$(dirname "$0")"/common
+
+[ -f /var/packages/MariaDB10/enabled ] && RunMySQL="yes" || RunMySQL="no"
+
+ADMIN_ACCOUNT="$wizard_m10_acc"
+ADMIN_PASS=$(echo "$wizard_m10_pass" | QuoteSQLString)
+
+CustomPreuninst
+
+if [ "$pkgwizard_remove_mysql" = "true" ]; then
+	if [ "$RunMySQL" = "yes" ]; then
+		DBAdminCheck "$ADMIN_ACCOUNT" "$ADMIN_PASS" "$MYSQL" "$m10_admin_permission_error" || exit 1
+	else
+		echo "$sql_not_run" >> "$SYNOPKG_TEMP_LOGFILE"
+	fi
+	rm -rf "$(CustomGetBackupPrefix)" "$INFO_FILE"
+else
+	rm -rf "$(CustomGetBackupPrefix)"
+	CustomRemove
+	CustomBackupData
+	echo "path=$(CustomGetBackupPrefix)" >> "$INFO_FILE"
+	echo "version=$SYNOPKG_PKGVER" >> "$INFO_FILE"
+fi
+
+exit 0

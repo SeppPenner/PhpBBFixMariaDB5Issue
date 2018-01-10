@@ -1,0 +1,81 @@
+#!/bin/bash
+# Copyright (c) 2000-2017 Synology Inc. All rights reserved.
+
+. "$(dirname "$0")"/common
+
+CustomPostinst
+
+# Link nginx config
+ln -sf "$SYNOLOGY_ADDED_PATH/etc/$PKG_NGINX_CONFIG" "$NGINX_CONF_PATH"
+
+# After upgrading to webstation 2.0, need to add php setting into .htaccess
+AddPHPSetting()
+{
+	local htaccess_php="$SYNOLOGY_ADDED_PATH/htaccess_php.conf"
+	local htaccess="$WEBSITE_ROOT/.htaccess.syno"
+	if [ -s "$htaccess" ] && ! grep -q "Synology Inc";  then
+		if ! grep -q "Synology PHP" "$htaccess"; then
+			cat "$htaccess_php" "$htaccess" > "$WEBSITE_ROOT/.htaccess.temp"
+			mv "$WEBSITE_ROOT/.htaccess.temp" "$htaccess"
+		fi
+	else
+		mv "$htaccess_php" "$htaccess"
+	fi
+}
+
+CustomSetWebsiteRoot
+
+if [ "true" = "$restore_backup" ] || [ "$SYNOPKG_PKG_STATUS" = "UPGRADE" ]; then
+	BACKUP_PATH=""
+	CustomSetBackupPath
+	#Record db_name, db_user
+	if [ "$SYNOPKG_PKG_STATUS" = "UPGRADE" ]; then
+		CustomSetUpgrade
+
+		OLD_BUILD_NUMBER=$(echo "$SYNOPKG_OLD_PKGVER" | cut -d- -f2)
+		DB_NAME=$(CustomGetDBName "$BACKUP_PATH")
+		if NeedMigrateDB "$OLD_BUILD_NUMBER"; then
+			DB_USER="$pkgwizard_db_user_account"
+			DB_USER_PASS="$pkgwizard_db_user_password"
+		else
+			DB_USER=$(CustomGetDBUser "$BACKUP_PATH")
+			DB_USER_PASS=$(CustomGetDBPass "$BACKUP_PATH")
+		fi
+	else
+		DB_NAME="$pkgwizard_db_name"
+		DB_USER="$pkgwizard_db_user_account"
+		DB_USER_PASS="$pkgwizard_db_user_password"
+	fi
+
+	# Restore
+	if CustomHasRunWebsiteSetup "$BACKUP_PATH"; then
+		CustomChangeDBUserInfo "$BACKUP_PATH" "$DB_USER" "$DB_USER_PASS"
+
+		CustomRestoreUpgrade
+		CustomUseUnixSocket
+	else
+		CustomSetCleanNew
+	fi
+else
+	# New install
+	DB_NAME="$pkgwizard_db_name"
+	DB_USER="$pkgwizard_db_user_account"
+	DB_USER_PASS="$pkgwizard_db_user_password"
+	CustomNewInst
+fi
+
+[ "$IS_SET_HTACCESS" = "true" ] && AddPHPSetting
+chown -R http:http "$WEBSITE_ROOT"
+
+# Set initial install setting values
+CustomSetInit
+
+# Write synology.conf
+echo "db_name=$DB_NAME" > "$INFO_FILE.tmp"
+echo "db_user=$DB_USER" >> "$INFO_FILE.tmp"
+CustomWriteInfo "$INFO_FILE.tmp" "$INFO_FILE"
+mv "$INFO_FILE.tmp" "$INFO_FILE"
+
+CustomRemoveBackupConf
+
+exit 0

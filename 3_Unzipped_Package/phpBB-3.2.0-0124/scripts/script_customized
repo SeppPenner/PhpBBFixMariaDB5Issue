@@ -1,0 +1,126 @@
+#!/bin/bash
+# Copyright (c) 2000-2017 Synology Inc. All rights reserved.
+
+NEW_SRC="$SYNOPKG_PKGDEST/$PKG_DIR"
+
+EscapeOldBackup()
+{
+	local old_build_num="$1"
+	local mariadb_hook="/usr/local/libexec/mariadb_chpw/phpBB"
+	local nginx_conf="$NGINX_CONF_PATH/$PKG_NGINX_CONFIG"
+
+	if [ "$old_build_num" -ge 31 -a "$old_build_num" -le 36 ]; then
+		[ -s "$mariadb_hook" ] && rm "$mariadb_hook"
+	elif [ "$old_build_num" -ge 100 -a "$old_build_num" -le 115 ]; then
+		[ -s "$nginx_conf" ] && rm "$nginx_conf"
+	fi
+
+	# Escape old backup steps
+	local var_pkg_dir="/var/packages/$PKG_NAME"
+	echo "#!/bin/bash" > "$var_pkg_dir/scripts/preuninst"
+	echo "exit 0" >> "$var_pkg_dir/scripts/preuninst"
+}
+
+
+CustomPreupgrade()
+{
+	# Old version of phpbb
+	#   - backup the data in preupgrade
+	#   - delete the $WEBSITE_ROOT in postinst
+	#
+	# New version of phpbb
+	#   - backup the data in preuninst
+	#   - delete the $WEBSITE_ROOT in preupgrade
+	#
+	local old_build_num=$(echo "$SYNOPKG_OLD_PKGVER" | cut -d- -f2)
+
+	if [ "$old_build_num" -le 115 ]; then
+		CustomBackupData
+		(
+		echo "path=$(CustomGetBackupPrefix)"
+		echo "version=$SYNOPKG_OLD_PKGVER"
+		echo "db_name=$(CustomGetDBName "$WEBSITE_ROOT")"
+		echo "db_user'$(CustomGetDBUser "$WEBSITE_ROOT")"
+		) > "$INFO_FILE"
+		EscapeOldBackup "$old_build_num"
+	fi
+}
+CustomChangeDBUserInfo()
+{
+	local path="$1"
+	local db_user="$2"
+	local db_pass="$3"
+
+	old_user=$(CustomGetDBUser "$path")
+	old_pass=$(CustomGetDBPass "$path")
+	if [ -f "$path/$CONF_FILE" ]; then
+		sed -i "s/dbuser = '$old_user'/dbuser = '$db_user'/g" "$path/$CONF_FILE"
+		sed -i "s/dbpasswd = '$old_pass'/dbpasswd = '$db_pass'/g" "$path/$CONF_FILE"
+	fi
+}
+
+CustomBackupData()
+{
+	local backup_prefix=$(CustomGetBackupPrefix)
+	rm -rf "$backup_prefix"
+	mkdir -p "$backup_prefix"
+	cp -a "$WEBSITE_ROOT" "$backup_prefix"
+}
+
+CustomRestoreUpgrade()
+{
+	# Restore
+	# XXX restore steps need to modify, put new, then cp needed backup
+	local old_build_num=$(CustomGetValueFromMetaFile "version" | cut -d- -f2)
+	local spec_file="$CONF_FILE images files store"
+	# 3.2.old to 3.2.x.new
+	if [ "$old_ver" -gt 0117 ]; then
+		cp -a "$BACKUP_PATH" "$WEBSITE_ROOT"
+	else
+		# 3.1 --> 3.2
+		[ "$old_ver" -gt 0108 ] && spec_file="$spec_file ext"
+		# 3.0 --> 3.2 will not restore ext
+		# Restore specifice files
+		mkdir -p "$WEBSITE_ROOT"
+		for item in $spec_file; do
+			cp -a "$BACKUP_PATH/$item" "$WEBSITE_ROOT"
+		done
+	fi
+
+	# Upgrade
+	for item in $spec_file; do
+		[ -e "$NEW_SRC/$item" ] && rm -rf "$NEW_SRC/$item"
+	done
+
+	cp -a "$NEW_SRC" "$(dirname "$WEBSITE_ROOT")"
+
+	pushd "$WEBSITE_ROOT/install"
+	php56 "$WEBSITE_ROOT/bin/phpbbcli.php" db:migrate --safe-mode
+	popd
+	rm -rf "$WEBSITE_ROOT/install"
+}
+
+CustomUseUnixSocket()
+{
+	sed -i "s|dbms.*|dbms = 'phpbb\\\\\\\\db\\\\\\\\driver\\\\\\\\mysql';|g" "$WEBSITE_ROOT/$CONF_FILE"
+	sed -i "s|dbport =.*|dbport = '$UNIX_SOCKET';|g" "$WEBSITE_ROOT/$CONF_FILE"
+}
+
+CustomSetCleanNew()
+{
+	mv "$NEW_SRC" "$WEBSITE_ROOT"
+}
+
+CustomNewInst()
+{
+	mv "$NEW_SRC" "$WEBSITE_ROOT"
+}
+
+CustomSetInit()
+{
+	local install_file="$WEBSITE_ROOT/phpbb/install/module/obtain_data/task/obtain_database_data.php"
+	if ! CustomHasRunWebsiteSetup "$WEBSITE_ROOT"; then
+		sed -i "s/__PHPBB_DATABASE__/$DB_NAME/g" "$install_file"
+		sed -i "s/__PHPBB_DBUSER__/$DB_USER/g" "$install_file"
+	fi
+}

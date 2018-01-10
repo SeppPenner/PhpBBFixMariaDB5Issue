@@ -1,0 +1,52 @@
+#!/bin/bash
+# Copyright (c) 2000-2017 Synology Inc. All rights reserved.
+
+PKG_NAME="phpBB"
+PKG_DIR="phpbb"
+WEBSITE_ROOT="/var/services/web/$PKG_DIR"
+CONF_FILE="config.php"
+MIGRATE_DB_VERSION="0119"
+INIT_DB_NAME="phpbb"
+INIT_DB_USER="phpbb_user"
+INFO_FILE="/usr/syno/etc/packages/$PKG_NAME/$PKG_DIR.conf"
+
+CustomGetBackupPkgPath()
+{
+	# old ver: backup data is in .phpbb
+	# new ver: backup data is in .phpbb/phpbb
+	local backup_pkg_path="$(CustomGetBackupPrefix)/$PKG_DIR"
+	local old_bkp_path="$(CustomGetBackupPrefix)"
+	if [ ! -d "$backup_pkg_path" ] && [ -s "$old_bkp_path/$CONF_FILE" ]; then
+		backup_pkg_path="$old_bkp_path"
+	fi
+	echo "$backup_pkg_path"
+}
+
+CustomParseDBConf()
+{
+	local path="$1"
+	local db_info="$2"
+	local grep_info="$3"
+	local info_output=$(CustomGetValueFromMetaFile "$db_info")
+
+	if [ -z "$info_output" ] && [ -s "$path/$CONF_FILE" ]; then
+		info_output=$(php -r "include('$path/$CONF_FILE'); echo \$$grep_info;")
+	fi
+
+	echo "$info_output"
+}
+
+CustomGetDBName()
+{
+	CustomParseDBConf "$1" "db_name" "dbname"
+}
+
+CustomGetDBUser()
+{
+	CustomParseDBConf "$1" "db_user" "dbuser"
+}
+
+CustomGetDBPass()
+{
+	CustomParseDBConf "$1" "db_pass" "dbpasswd"
+}
