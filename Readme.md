@@ -45,6 +45,7 @@ tar -cvf phpBB-3.2.0-0124.spk *
 to build the new spk file with packing all the stuff together.
 
 6. It doesn't work...
+7. Stackoverflow.com issue: https://stackoverflow.com/questions/48195610/phpbb-fails-after-upgrade-from-mariadb5-to-mariadb10-custom-synology-package --> Help appreciated :)
 
 Change history
 --------------
