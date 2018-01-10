@@ -1,6 +1,6 @@
 # PhpBBFixMariaDB5Issue
 
-[![Build status](https://ci.appveyor.com/api/projects/status/m435h8vg3m6uwdv2?svg=true)](https://ci.appveyor.com/project/SeppPenner/ransomware)
+[![Build status](https://ci.appveyor.com/api/projects/status/2eyyigxnfl79ur0t?svg=true)](https://ci.appveyor.com/project/SeppPenner/phpbbfixmariadb5issue)
 [![GitHub issues](https://img.shields.io/github/issues/SeppPenner/PhpBBFixMariaDB5Issue.svg)](https://github.com/SeppPenner/PhpBBFixMariaDB5Issue/issues)
 [![GitHub forks](https://img.shields.io/github/forks/SeppPenner/PhpBBFixMariaDB5Issue.svg)](https://github.com/SeppPenner/PhpBBFixMariaDB5Issue/network)
 [![GitHub stars](https://img.shields.io/github/stars/SeppPenner/PhpBBFixMariaDB5Issue.svg)](https://github.com/SeppPenner/PhpBBFixMariaDB5Issue/stargazers)
@@ -16,8 +16,27 @@ Mainly, it's because phpBB finds an already deinstalled MariaDB5 version and wan
 1. I downloaded the package from https://archive.synology.com/download/Package/spk/phpBB/3.2.0-0124/
 2. I renamed the package from phpBB-3.2.0-0124.spk to phpBB-3.2.0-0124.tar
 3. I unzipped the package to a folder
-4. I 
+4. I adjusted the following lines:
 
+```bash
+NeedMigrateDB()
+{
+	local version="$1"
+	if [ -z "$version" ] || [ "$version" -le "$MIGRATE_DB_VERSION" ]; then
+		return 0
+	fi
+	return 1
+}
+```
+
+to 
+
+```bash
+NeedMigrateDB()
+{
+	return 0
+}
+```
 
 ## Folders
 The [Setup](https://github.com/SeppPenner/PhpBBFixMariaDB5Issue/blob/master/Setup) folder contains a [Inno Setup](http://www.jrsoftware.org/isinfo.php) script and the installer.
