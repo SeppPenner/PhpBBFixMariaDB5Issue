@@ -47,6 +47,9 @@ to build the new spk file with packing all the stuff together.
 6. It doesn't work...
 7. Stackoverflow.com issue: https://stackoverflow.com/questions/48195610/phpbb-fails-after-upgrade-from-mariadb5-to-mariadb10-custom-synology-package --> Help appreciated :)
 
+UPDATE:
+Issue is now fixed. Resolution here: https://www.phpbb.com/community/viewtopic.php?f=556&t=2441286&p=14906311#p14906311
+
 Change history
 --------------
 * **Version 1.0.0.0 (2018-01-10)** : 1.0 release.
